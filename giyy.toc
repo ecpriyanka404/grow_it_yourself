@@ -1,0 +1,8 @@
+\beamer@sectionintoc {1}{Introduction}{3}{0}{1}
+\beamer@subsectionintoc {1}{1}{Abstract}{4}{0}{1}
+\beamer@sectionintoc {2}{Methodology}{5}{0}{2}
+\beamer@subsectionintoc {2}{1}{Hardware used}{6}{0}{2}
+\beamer@subsectionintoc {2}{2}{Software used}{7}{0}{2}
+\beamer@sectionintoc {3}{Advantages}{8}{0}{3}
+\beamer@sectionintoc {4}{Disadvantages}{9}{0}{4}
+\beamer@sectionintoc {5}{Conclusion}{11}{0}{5}
