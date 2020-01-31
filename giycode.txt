@@ -1,0 +1,491 @@
+/*
+                            *
+                            * Project Name: 	<Grow it yourself>
+                            * Author List: 		<Gayatri M. Jangam, Asiya A. Desai>
+                            * Filename: 		<giy.c>
+                            * Functions: 		<digitalRead, etc.>
+                            * Global Variables:	<temperature,humidity,immersion,pH,motor,light,humidifier,threshold>
+                            *
+                            */
+
+//ph sensor ....serial1
+
+#if 1
+
+#include <Adafruit_GFX.h>
+#include <MCUFRIEND_kbv.h>
+MCUFRIEND_kbv tft;
+#include <TouchScreen.h>
+#define MINPRESSURE 200
+#define MAXPRESSURE 1000
+// pir 1 output
+//rain 0 output
+#include "DHT.h"
+#include <DallasTemperature.h>
+#include <Wire.h>  
+#include "logo.h"
+String foggermsg="OFF";
+bool fogger=false;
+#include <OneWire.h>
+int thrdata=0;
+#include <FreeDefaultFonts.h>
+#include <Fonts/FreeSansBold9pt7b.h>
+#include <Fonts/FreeMonoBold9pt7b.h>
+#include <Fonts/FreeSerifBold9pt7b.h>
+#include <Fonts/FreeSerifBold12pt7b.h>
+#include <Fonts/FreeSansBold12pt7b.h>
+#define LOWFLASH (defined(__AVR_ATmega328P__) && defined(MCUFRIEND_KBV_H_))
+#define DHTPIN 23     // what digital pin we're connected to
+#define DHTTYPE DHT11/*
+                            *
+                            * Function Name: 	<DHT>
+                            * Input: 		<DHTPIN>
+                            * Output: 		<DHTTYPE>
+                            * Logic: 		<This is used to determine what digital pin 23 does >
+                            * Example Call:		<DHT dht(DHTPIN, DHTTYPE);>
+                            *
+                            */
+DHT dht(DHTPIN, DHTTYPE);
+
+int potread;
+
+float humidity=0.0;
+float temperature=0.0;
+
+float phvalue;
+int lightvalue;
+int immersionlevel;
+
+int rel1=22;
+int rel2=24;
+int rel3=26;
+int rel4=28;
+
+int buzzer=30;
+
+int threshold=A8;
+int light=A9;
+
+
+// ALL Touch panels and wiring is DIFFERENT
+// copy-paste results from TouchScreen_Calibr_native.ino
+const int XP=6,XM=A2,YP=A1,YM=7; //240x320 ID=0x5408
+const int TS_LEFT=143,TS_RT=903,TS_TOP=97,TS_BOT=889;
+
+
+
+TouchScreen ts = TouchScreen(XP, YP, XM, YM, 300);
+
+
+
+//Adafruit_GFX_Button on_btn, off_btn;
+
+int pixel_x, pixel_y;     //Touch_getXY() updates global vars
+bool Touch_getXY(void)
+{
+    TSPoint p = ts.getPoint();
+    pinMode(YP, OUTPUT);      //restore shared pins
+    pinMode(XM, OUTPUT);
+    digitalWrite(YP, HIGH);   //because TFT control pins
+    digitalWrite(XM, HIGH);
+    bool pressed = (p.z > MINPRESSURE && p.z < MAXPRESSURE);
+    if (pressed) {
+        pixel_x = map(p.x, TS_LEFT, TS_RT, 0, tft.width()); //.kbv makes sense to me
+        pixel_y = map(p.y, TS_TOP, TS_BOT, 0, tft.height());
+    }
+    return pressed;
+}
+
+#define BLACK   0x0000
+#define BLUE    0x001F
+#define RED     0xF800
+#define GREEN   0x07E0
+#define CYAN    0x07FF
+#define MAGENTA 0xF81F
+#define YELLOW  0xFFE0
+#define WHITE   0xFFFF
+#define CUSTOM   0x4029
+#define CUS   0x7052
+
+// Color definitions 
+#define ILI9341_BLACK   0x0000  /*  0,  0,  0 */ 
+#define ILI9341_NAVY  0x000F  /*  0,  0, 128 */ 
+#define ILI9341_DARKGREEN  0x03E0  /*  0, 128,  0 */ 
+#define ILI9341_DARKCYAN  0x03EF  /*  0, 128, 128 */ 
+#define ILI9341_MAROON  0x7800  /* 128,  0,   0 */ 
+#define ILI9341_PURPLE  0x780F  /* 128,  0, 128 */ 
+#define ILI9341_OLIVE  0x7BE0  /* 128, 128,  0 */ 
+#define ILI9341_LIGHTGREY  0xC618  /* 192, 192, 192 */ 
+#define ILI9341_DARKGREY  0x7BEF  /* 128, 128, 128 */ 
+#define ILI9341_BLUE  0x001F  /*  0,  0, 255 */ 
+#define ILI9341_GREEN  0x07E0  /*  0, 255,  0 */ 
+#define ILI9341_CYAN  0x07FF  /*  0, 255, 255 */ 
+#define ILI9341_RED  0xF800  /* 255,  0,   0 */ 
+#define ILI9341_MAGENTA  0xF81F  /* 255,  0, 255 */ 
+#define ILI9341_YELLOW  0xFFE0  /* 255, 255,  0 */ 
+#define ILI9341_WHITE  0xFFFF  /* 255, 255, 255 */ 
+#define ILI9341_ORANGE  0xFD20  /* 255, 165,   0 */ 
+#define ILI9341_GREENYELLOW 0xAFE5   /* 173, 255,  47 */ 
+#define ILI9341_PINK        0xF81F 
+/******************* UI details */ 
+#define BUTTON_X 40 
+#define BUTTON_Y 140 
+#define BUTTON_W 60 
+#define BUTTON_H 30 
+#define BUTTON_SPACING_X 20 
+#define BUTTON_SPACING_Y 20 
+#define BUTTON_TEXTSIZE 2 
+// text box where numbers go 
+#define TEXT_X 10 
+#define TEXT_Y 50 
+#define TEXT_W 220 
+#define TEXT_H 50 
+#define TEXT_TSIZE 3 
+#define TEXT_TCOLOR ILI9341_WHITE
+
+ 
+#define TS_MINX 100 
+#define TS_MAXX 920 
+#define TS_MINY 70 
+#define TS_MAXY 900 
+#define STATUS_X 10 
+#define STATUS_Y 105
+
+
+
+
+
+
+
+
+void setup() {
+  // put your setup code here, to run once:
+Serial.begin(9600);
+  Serial1.begin(9600);
+    /*
+                            *
+                            * Function Name: 	<pinmode>
+                            * Input: 		<variable name,input/output mode>
+                            * Output: 		<accordingly to design parameter>
+                            * Logic: 		<to determine the mode of pin>
+                            * Example Call:		<  pinMode(rel2,OUTPUT);>
+                            *
+                            */
+						
+
+  pinMode(rel1,OUTPUT);
+  pinMode(rel2,OUTPUT);
+  pinMode(rel3,OUTPUT);
+  pinMode(rel4,OUTPUT);
+
+  uint16_t ID = tft.readID();
+/*
+                            *
+                            * Function Name: 	<Serial.print>
+                            * Input: 		<"the string name">
+                            * Output: 		<values for the given parameter>
+                            * Logic: 		<to dprint the parameters>
+                            * Example Call:		<Serial.print("TFT ID = 0x");>
+                            *
+                            */
+    Serial.print("TFT ID = 0x");
+    Serial.println(ID, HEX);
+    Serial.println("Calibrate for your Touch Panel");
+    if (ID == 0xD3D3) ID = 0x9486; // write-only shield
+    tft.begin(ID);
+/*
+                            *
+                            * Function Name: 	<tft.begin(ID)>
+                            * Input: 		<ID>
+                            * Output: 		<values for the given parameters to display on LCD>
+                            * Logic: 		<gets ID and the lcd gets readdy to work>
+                            * Example Call:	<tft.begin(ID)>
+                            *
+                            */
+    tft.setRotation(0);  
+/*
+                            *
+                            * Function Name: 	<tft.setRotation(0); >
+                            * Input: 		<0,1,2 OR 3>
+                            * Output: 		<POTRAIT OR LANDSCAPE MODE>
+                            * Logic: 		<SETS THE DISPLAY TO A POTRAIT MODE>
+                            * Example Call:		<tft.setRotation(0);>
+                            *
+                            */
+    digitalWrite(24,HIGH);
+/*
+                            *
+                            * Function Name: 	<digitalWrite(24,HIGH/LOW)>
+                            * Input: 		<PIN NUMBER,HIGH/LOW>
+                            * Output: 		<HIGH OR LOW>
+                            * Logic: 		<TO DETERMINE DIGITAL PIN>
+                            * Example Call:		<digitalWrite(24,HIGH/LOW)>
+                            *
+                            */
+    digitalWrite(26,HIGH);
+    digitalWrite(28,HIGH);
+      
+    // Print a message to the LCD.
+
+        showlogo(60,80);  
+       
+ 
+ showsplash();
+
+
+
+
+ 
+    
+    //PORTRAIT
+    tft.fillScreen(WHITE);
+
+
+  // tft.fillRect(0 , 0, 240, 60, ILI9341_BLACK); 
+ 
+
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+
+  //Serial.println(analogRead(A8));
+readsensors();
+
+
+}
+
+void readsensors()
+{
+  
+  float h = dht.readHumidity();
+  // Read temperature as Celsius (the default)
+  float t = dht.readTemperature();
+
+  if (isnan(h) || isnan(t) ) {
+    Serial.println("Failed to read from DHT sensor!");
+    return;
+  }
+
+  humidity=h;
+  temperature=t;
+  Serial.println(humidity);
+
+thrdata=analogRead(A8);
+thrdata=map(thrdata,0,1023,0,100);
+    if(Serial1.available()>0)
+  {
+    String data="";
+    while(Serial1.available()>0)
+    {
+      data=Serial1.readString();
+    }
+    
+
+    if(data!="" && data.length()<50)
+    {
+    int findex=data.indexOf(',');
+    int sindex=data.indexOf(',',findex+1);
+    int tindex=data.indexOf(',',sindex+1);
+    int frindex=data.indexOf(',',tindex+1);
+   
+    String phv = data.substring(0, findex);
+    String wv = data.substring(findex+1,sindex);
+    String lv=data.substring(sindex+1,tindex);
+    String tv=data.substring(tindex+1,frindex);
+    phv.trim();
+    wv.trim();
+    lv.trim();
+
+int phc=phv.indexOf(':');
+
+int wc=wv.indexOf(':');
+
+int lc=lv.indexOf(':');
+   phvalue=phv.substring(phc+1).toFloat();
+      lightvalue=lv.substring(lc+1).toInt();
+      immersionlevel=wv.substring(wc+1).toInt();
+  Serial.println(data);
+
+  if(thrdata>humidity)
+  {
+    if(fogger==false)
+    {
+   
+      fogger=true;
+      
+    }
+  }
+  else
+  {
+   if(fogger==true)
+   {
+    
+      fogger=false;
+   }
+  }
+
+  if(fogger==false)
+  {
+    foggermsg="OFF";
+  }
+  else
+  {
+    foggermsg="ON";
+  }
+  
+
+  showsystemstats(phvalue,immersionlevel, humidity, temperature, lightvalue, foggermsg, thrdata,"OFF");
+
+ 
+  /*  Serial.println(phvalue);
+        Serial.println(lightvalue);
+            Serial.println(immersionlevel);
+                */
+    
+   
+  }
+}
+   
+}
+
+void showlogo(int a, int b)
+{
+   int x = a, y=b;
+
+  tft.fillScreen(WHITE);
+   
+
+    tft.setAddrWindow(x, y, x + 100 - 1, y + 100 - 1);
+    tft.pushColors((const uint8_t*)gou,100 * 100, 1, false);
+     tft.setAddrWindow(0, 0, tft.width() - 1, tft.height() - 1);
+    showmsgXY(30, 200, 1,&FreeSerifBold9pt7b, "GROW IT YOURSELF",CUSTOM);
+ delay(2000);
+    
+    
+}
+
+void showsplash()
+{
+
+
+  tft.fillScreen(WHITE);
+ for(int i=0;i<250;i++)
+ {  
+ tft.drawFastVLine(8,40,i,GREEN);
+  tft.drawFastVLine(9,40,i,GREEN);
+   tft.drawFastVLine(10,40,i,GREEN);
+   delay(5);
+ }
+
+    
+    
+    showmsgXY(40, 170, 1,&FreeSansBold12pt7b, "LOADING WAIT",GREEN);
+        delay(500);
+        
+  
+    delay(2000);
+    tft.fillScreen(WHITE);
+    
+    
+}
+
+
+void showmsgXY(int x, int y, int sz, const GFXfont *f, const char *msg,int color)
+{
+    int16_t x1, y1;
+    uint16_t wid, ht;
+    //tft.drawFastHLine(0, y, tft.width(), WHITE);
+    tft.setFont(f);
+    tft.setCursor(x, y);
+    tft.setTextColor(color);
+    tft.setTextSize(sz);
+    tft.print(msg);
+
+
+     tft.setFont(NULL);
+}
+
+void showsystemstats(float phva,int immer, int humid, int temp, int lr, String pump, int thr, String mot)
+{
+  tft.fillScreen(WHITE);
+    delay(200);
+  int _thr=thr;
+  int _temp=temp;
+  int _humid=humid;
+  int _immer=immer;
+  float _phva=phva;
+  String _mot=mot;
+ 
+  int _lr=lr;
+  String _pump=pump;
+
+
+  String lightmsg="NO";
+
+  if(_lr<30)
+  {
+    lightmsg="NO";
+  }
+  else
+  {
+    lightmsg="YES";
+  }
+
+  tft.setCursor(30, 5); 
+  tft.setTextColor(BLACK); 
+  tft.setTextSize(3); 
+  tft.print("SENSOR DATA"); 
+   tft.drawFastHLine(10,30,230,BLACK);
+ 
+
+
+  
+ tft.setCursor(20, 60); 
+  tft.setTextColor(BLACK); 
+  tft.setTextSize(2); 
+  tft.print("TEMPERATURE :"+String(_temp)+" C"); 
+  
+    tft.setCursor(20, 90); 
+  tft.setTextColor(BLACK); 
+  tft.setTextSize(2); 
+  tft.print("HUMIDITY :"+String(_humid)+" %"); 
+
+   tft.setCursor(20, 120); 
+  tft.setTextColor(BLACK); 
+  tft.setTextSize(2); 
+  tft.print("IMMERSION :"+String(_immer)+" pts"); 
+
+  tft.setCursor(20, 150); 
+  tft.setTextColor(BLACK); 
+  tft.setTextSize(2); 
+  tft.print("PH :"+String(_phva)); 
+
+  
+  tft.setCursor(20, 180); 
+ tft.setTextColor(BLACK); 
+ tft.setTextSize(2); 
+ tft.print("MOTOR :"+_mot); 
+  tft.setCursor(20, 210); 
+  tft.setTextColor(BLACK); 
+  tft.setTextSize(2); 
+  tft.print("LIGHT :"+lightmsg); 
+
+  tft.setCursor(20, 240); 
+  tft.setTextColor(BLACK); 
+  tft.setTextSize(2); 
+  tft.print("HUMIDIFIER :"+_pump); 
+
+   tft.setCursor(20, 270); 
+  tft.setTextColor(BLACK); 
+  tft.setTextSize(2); 
+  tft.print("Threshold :"+String(_thr)); 
+  
+   delay(500);
+
+   
+}
+
+
+
+#endif
